@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/air_quality_repository.dart';
 import '../domain/air_quality.dart';
 
@@ -12,6 +13,7 @@ class AirQualityHomePage extends StatefulWidget {
 class _AirQualityHomePageState extends State<AirQualityHomePage> {
   final TextEditingController _searchController = TextEditingController();
   final AirQualityRepository _repository = AirQualityRepository();
+  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
 
   Future<AirQuality>? _airQualityFuture;
   String _currentCity = 'Makassar';
@@ -19,8 +21,17 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
   @override
   void initState() {
     super.initState();
-    _searchController.text = _currentCity;
-    _search(_currentCity);
+    _loadLastCityAndFetch();
+  }
+
+  Future<void> _loadLastCityAndFetch() async {
+    final savedCity = await _prefs.getString('last_city');
+    final cityToFetch = (savedCity != null && savedCity.isNotEmpty) ? savedCity : 'Makassar';
+    setState(() {
+      _currentCity = cityToFetch;
+      _searchController.text = cityToFetch;
+      _airQualityFuture = _repository.fetchAirQuality(cityToFetch);
+    });
   }
 
   void _search(String city) {
@@ -29,7 +40,10 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
 
     setState(() {
       _currentCity = query;
-      _airQualityFuture = _repository.fetchAirQuality(query);
+      _airQualityFuture = _repository.fetchAirQuality(query).then((data) {
+        _prefs.setString('last_city', query);
+        return data;
+      });
     });
   }
 
@@ -50,7 +64,6 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Baris Input Pencarian
             Row(
               children: [
                 Expanded(
@@ -72,8 +85,6 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
               ],
             ),
             const SizedBox(height: 20),
-
-            // Penanganan Asinkron dengan FutureBuilder
             Expanded(
               child: FutureBuilder<AirQuality>(
                 future: _airQualityFuture,
@@ -82,7 +93,6 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // Error State dengan Tombol Retry
                   if (snapshot.hasError) {
                     final errorMessage = snapshot.error
                         .toString()
@@ -121,7 +131,6 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
                     );
                   }
 
-                  // Success State
                   if (snapshot.hasData) {
                     final data = snapshot.data!;
                     return SingleChildScrollView(
