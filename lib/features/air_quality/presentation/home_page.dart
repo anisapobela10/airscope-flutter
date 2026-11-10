@@ -14,13 +14,13 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
   final AirQualityRepository _repository = AirQualityRepository();
 
   Future<AirQuality>? _airQualityFuture;
+  String _currentCity = 'Makassar';
 
   @override
   void initState() {
     super.initState();
-    // Default awal memuat data kota Makassar
-    _searchController.text = 'Makassar';
-    _search('Makassar');
+    _searchController.text = _currentCity;
+    _search(_currentCity);
   }
 
   void _search(String city) {
@@ -28,6 +28,7 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
     if (query.length < 2) return;
 
     setState(() {
+      _currentCity = query;
       _airQualityFuture = _repository.fetchAirQuality(query);
     });
   }
@@ -81,15 +82,46 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+                  // Error State dengan Tombol Retry
                   if (snapshot.hasError) {
+                    final errorMessage = snapshot.error
+                        .toString()
+                        .replaceAll('Exception: ', '');
                     return Center(
-                      child: Text(
-                        'Gagal memuat data:\n${snapshot.error.toString().replaceAll("Exception: ", "")}',
-                        textAlign: TextAlign.center,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.redAccent,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Gagal Memuat Data',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              errorMessage,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: () => _search(_currentCity),
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Coba lagi'),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }
 
+                  // Success State
                   if (snapshot.hasData) {
                     final data = snapshot.data!;
                     return SingleChildScrollView(
@@ -110,7 +142,10 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
                                   const SizedBox(height: 8),
                                   Text(
                                     '${data.aqi}',
-                                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displayLarge
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
@@ -139,7 +174,8 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
                     );
                   }
 
-                  return const Center(child: Text('Masukkan nama kota untuk mencari.'));
+                  return const Center(
+                      child: Text('Masukkan nama kota untuk mencari.'));
                 },
               ),
             ),
