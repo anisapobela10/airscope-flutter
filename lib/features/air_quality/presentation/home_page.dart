@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../data/air_quality_repository.dart';
+import '../domain/air_quality.dart';
 
 class AirQualityHomePage extends StatefulWidget {
   const AirQualityHomePage({super.key});
@@ -9,18 +11,24 @@ class AirQualityHomePage extends StatefulWidget {
 
 class _AirQualityHomePageState extends State<AirQualityHomePage> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedCity = '';
+  final AirQualityRepository _repository = AirQualityRepository();
 
-  void _search() {
-    final query = _searchController.text.trim();
-    if (query.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan minimal 2 karakter kota')),
-      );
-      return;
-    }
+  Future<AirQuality>? _airQualityFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default awal memuat data kota Makassar
+    _searchController.text = 'Makassar';
+    _search('Makassar');
+  }
+
+  void _search(String city) {
+    final query = city.trim();
+    if (query.length < 2) return;
+
     setState(() {
-      _selectedCity = query;
+      _airQualityFuture = _repository.fetchAirQuality(query);
     });
   }
 
@@ -41,6 +49,7 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Baris Input Pencarian
             Row(
               children: [
                 Expanded(
@@ -51,22 +60,89 @@ class _AirQualityHomePageState extends State<AirQualityHomePage> {
                       hintText: 'Contoh: Makassar, Jakarta',
                       border: OutlineInputBorder(),
                     ),
-                    onSubmitted: (_) => _search(),
+                    onSubmitted: _search,
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
                   icon: const Icon(Icons.search),
-                  onPressed: _search,
+                  onPressed: () => _search(_searchController.text),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            if (_selectedCity.isNotEmpty)
-              Text(
-                'Kota dipilih: $_selectedCity',
-                style: Theme.of(context).textTheme.titleMedium,
+            const SizedBox(height: 20),
+
+            // Penanganan Asinkron dengan FutureBuilder
+            Expanded(
+              child: FutureBuilder<AirQuality>(
+                future: _airQualityFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Gagal memuat data:\n${snapshot.error.toString().replaceAll("Exception: ", "")}',
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasData) {
+                    final data = snapshot.data!;
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          Text(
+                            data.locationLabel,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                children: [
+                                  const Text('Indeks Kualitas Udara (US AQI)'),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '${data.aqi}',
+                                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Chip(label: Text(data.category)),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    data.recommendation,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text('PM2.5: ${data.pm25} µg/m³'),
+                              Text('PM10: ${data.pm10} µg/m³'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return const Center(child: Text('Masukkan nama kota untuk mencari.'));
+                },
               ),
+            ),
           ],
         ),
       ),
