@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'features/air_quality/presentation/home_page.dart';
 
 class AirScopeApp extends StatelessWidget {
   const AirScopeApp({super.key});
@@ -11,11 +12,7 @@ class AirScopeApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.lightBlue,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('AirScope App Initialized'),
-        ),
-      ),
+      home: const AirQualityHomePage(),
       debugShowCheckedModeBanner: false,
     );
   }
