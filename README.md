@@ -1,17 +1,12 @@
-# airscope
+# AirScope — Aplikasi Pengecek Kualitas Udara
 
-A new Flutter project.
+AirScope adalah aplikasi berbasis Flutter yang dikembangkan untuk memantau Indeks Kualitas Udara (US AQI) secara real-time menggunakan Open-Meteo API.
 
-## Getting Started
+## Fitur Utama & Kriteria Tugas
+1. **REST API Integration**: Mengambil data Geocoding dan Kualitas Udara (US AQI, PM2.5, PM10) dari Open-Meteo.
+2. **Asynchronous Handling (`FutureBuilder`)**: Penanganan status data dinamis (Loading, Success, dan Error dengan tombol Retry).
+3. **Local Storage (`shared_preferences`)**: Menyimpan dan memulihkan nama kota terakhir yang berhasil dicari secara lokal.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Sumber Data API
+- Geocoding API: Open-Meteo Geocoding
+- Air Quality API: Open-Meteo Air Quality
